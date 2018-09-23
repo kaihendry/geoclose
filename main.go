@@ -1,8 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"log"
+	"io/ioutil"
 	"math"
 )
 
@@ -32,40 +33,70 @@ func main() {
 		},
 	}
 
-	p := New("")
+	p := Places{
+		{
+			Title: "Table Mountain",
+			Point: Point{
+				lat: -33.957314,
+				lng: 18.403108,
+			},
+		},
+		{
+			Title: "Statue of liberty",
+			Point: Point{
+				lat: 40.689167,
+				lng: -74.044444,
+			},
+		},
+	}
 	fmt.Println("Closest point to", whereiam.Title, "is", p.closest(whereiam))
 
 }
 
-func New(jsonfile string) (places Places) {
-	if jsonfile == "" {
-		places = []place{
-			{
-				Title: "Table Mountain",
-				Point: Point{
-					lat: -33.957314,
-					lng: 18.403108,
-				},
-			},
-			{
-				Title: "Statue of liberty",
-				Point: Point{
-					lat: 40.689167,
-					lng: -74.044444,
-				},
-			},
-		}
+func loadBusJSON(jsonfile string) (p Places, err error) {
+
+	type BusStops []struct {
+		BusStopCode string  `json:"BusStopCode"`
+		RoadName    string  `json:"RoadName"`
+		Description string  `json:"Description"`
+		Latitude    float64 `json:"Latitude"`
+		Longitude   float64 `json:"Longitude"`
 	}
+
+	var bs BusStops
+
+	content, err := ioutil.ReadFile(jsonfile)
+	if err != nil {
+		return p, err
+	}
+
+	err = json.Unmarshal(content, &bs)
+
+	if err != nil {
+		return p, err
+	}
+
+	for _, v := range bs {
+		p = append(p, place{
+			Title: v.Description,
+			Point: Point{
+				lat: v.Latitude,
+				lng: v.Longitude,
+			},
+		})
+	}
+
 	return
+
 }
 
 func (places Places) closest(w place) (c place) {
 	c = places[0]
 	closestSoFar := w.Point.GreatCircleDistance(c.Point)
-	log.Println(c.Title, closestSoFar)
+	//log.Println(c.Title, closestSoFar)
 	for _, p := range places[1:] {
 		distance := w.Point.GreatCircleDistance(p.Point)
-		log.Println(p.Title, distance)
+		//log.Printf("'%s' %.1f\n", p.Title, distance)
 		if distance < closestSoFar {
 			// Set the return
 			c = p
