@@ -16,26 +16,11 @@ type Point struct {
 	lng float64
 }
 
+type Places []place
+
 type place struct {
 	Title string
 	Point Point
-}
-
-var places = []place{
-	{
-		Title: "Table Mountain",
-		Point: Point{
-			lat: -33.957314,
-			lng: 18.403108,
-		},
-	},
-	{
-		Title: "Statue of liberty",
-		Point: Point{
-			lat: 40.689167,
-			lng: -74.044444,
-		},
-	},
 }
 
 func main() {
@@ -47,11 +32,34 @@ func main() {
 		},
 	}
 
-	fmt.Println("Closest point to", whereiam.Title, "is", closest(whereiam))
+	p := New("")
+	fmt.Println("Closest point to", whereiam.Title, "is", p.closest(whereiam))
 
 }
 
-func closest(w place) (c place) {
+func New(jsonfile string) (places Places) {
+	if jsonfile == "" {
+		places = []place{
+			{
+				Title: "Table Mountain",
+				Point: Point{
+					lat: -33.957314,
+					lng: 18.403108,
+				},
+			},
+			{
+				Title: "Statue of liberty",
+				Point: Point{
+					lat: 40.689167,
+					lng: -74.044444,
+				},
+			},
+		}
+	}
+	return
+}
+
+func (places Places) closest(w place) (c place) {
 	c = places[0]
 	closestSoFar := w.Point.GreatCircleDistance(c.Point)
 	log.Println(c.Title, closestSoFar)
