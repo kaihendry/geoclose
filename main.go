@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"math"
 )
@@ -12,91 +11,52 @@ const (
 	EarthRadius = 6371
 )
 
+// Point is a geo co-ordinate
 type Point struct {
 	lat float64
 	lng float64
 }
 
-type Places []place
-
-type place struct {
-	Title string
-	Point Point
+// BusStop describes a Singaporean (LTA) bus stop
+type BusStop struct {
+	BusStopCode string  `json:"BusStopCode"`
+	RoadName    string  `json:"RoadName"`
+	Description string  `json:"Description"`
+	Latitude    float64 `json:"Latitude"`
+	Longitude   float64 `json:"Longitude"`
+	Point       Point
 }
 
-func main() {
-	whereiam := place{
-		Title: "Middle Earth",
-		Point: Point{
-			lat: 0.0,
-			lng: 0.0,
-		},
-	}
+// BusStops are many bus stops
+type BusStops []BusStop
 
-	p := Places{
-		{
-			Title: "Table Mountain",
-			Point: Point{
-				lat: -33.957314,
-				lng: 18.403108,
-			},
-		},
-		{
-			Title: "Statue of liberty",
-			Point: Point{
-				lat: 40.689167,
-				lng: -74.044444,
-			},
-		},
-	}
-	fmt.Println("Closest point to", whereiam.Title, "is", p.closest(whereiam))
-
-}
-
-func loadBusJSON(jsonfile string) (p Places, err error) {
-
-	type BusStops []struct {
-		BusStopCode string  `json:"BusStopCode"`
-		RoadName    string  `json:"RoadName"`
-		Description string  `json:"Description"`
-		Latitude    float64 `json:"Latitude"`
-		Longitude   float64 `json:"Longitude"`
-	}
-
-	var bs BusStops
-
+func loadBusJSON(jsonfile string) (bs []BusStop, err error) {
 	content, err := ioutil.ReadFile(jsonfile)
 	if err != nil {
-		return p, err
+		return
 	}
-
 	err = json.Unmarshal(content, &bs)
-
 	if err != nil {
-		return p, err
+		return
 	}
 
-	for _, v := range bs {
-		p = append(p, place{
-			Title: v.Description,
-			Point: Point{
-				lat: v.Latitude,
-				lng: v.Longitude,
-			},
-		})
+	// TODO is there a way to avoid this duplication in some interface?
+	// Convert Lat/Long into Point
+	for i := 0; i < len(bs); i++ {
+		bs[i].Point = Point{bs[i].Latitude, bs[i].Longitude}
 	}
 
 	return
-
 }
 
-func (places Places) closest(w place) (c place) {
-	c = places[0]
-	closestSoFar := w.Point.GreatCircleDistance(c.Point)
-	//log.Println(c.Title, closestSoFar)
-	for _, p := range places[1:] {
-		distance := w.Point.GreatCircleDistance(p.Point)
-		//log.Printf("'%s' %.1f\n", p.Title, distance)
+func (BusStops BusStops) closest(location Point) (c BusStop) {
+	c = BusStops[0]
+	// fmt.Println(c)
+	closestSoFar := location.GreatCircleDistance(c.Point)
+	// log.Println(c.Description, closestSoFar)
+	for _, p := range BusStops[1:] {
+		distance := location.GreatCircleDistance(p.Point)
+		// log.Printf("'%s' %.1f\n", p.Description, distance)
 		if distance < closestSoFar {
 			// Set the return
 			c = p
@@ -107,6 +67,16 @@ func (places Places) closest(w place) (c place) {
 	return
 }
 
+func (BusStops BusStops) nameBusStopID(busid string) (description string) {
+	for _, p := range BusStops {
+		if busid == p.BusStopCode {
+			return p.Description
+		}
+	}
+	return ""
+}
+
+// GreatCircleDistance calculates the distance between two points considering the curvature of planet earth
 // From https://github.com/kellydunn/golang-geo/blob/master/point.go#L70
 func (p Point) GreatCircleDistance(p2 Point) float64 {
 	dLat := (p2.lat - p.lat) * (math.Pi / 180.0)
