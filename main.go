@@ -24,7 +24,6 @@ type BusStop struct {
 	Description string  `json:"Description"`
 	Latitude    float64 `json:"Latitude"`
 	Longitude   float64 `json:"Longitude"`
-	Point       Point
 }
 
 // BusStops are many bus stops
@@ -40,22 +39,16 @@ func loadBusJSON(jsonfile string) (bs []BusStop, err error) {
 		return
 	}
 
-	// TODO is there a way to avoid this duplication in some interface?
-	// Convert Lat/Long into Point
-	for i := 0; i < len(bs); i++ {
-		bs[i].Point = Point{bs[i].Latitude, bs[i].Longitude}
-	}
-
 	return
 }
 
 func (BusStops BusStops) closest(location Point) (c BusStop) {
 	c = BusStops[0]
 	// fmt.Println(c)
-	closestSoFar := location.GreatCircleDistance(c.Point)
+	closestSoFar := location.GreatCircleDistance(Point{c.Latitude, c.Longitude})
 	// log.Println(c.Description, closestSoFar)
 	for _, p := range BusStops[1:] {
-		distance := location.GreatCircleDistance(p.Point)
+		distance := location.GreatCircleDistance(Point{p.Latitude, p.Longitude})
 		// log.Printf("'%s' %.1f\n", p.Description, distance)
 		if distance < closestSoFar {
 			// Set the return

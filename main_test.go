@@ -42,10 +42,6 @@ func TestBusStops_closest(t *testing.T) {
 				Description: "BEF TUAS STH AVE 14",
 				Latitude:    1.27637,
 				Longitude:   103.621508,
-				Point: Point{
-					lat: 1.27637,
-					lng: 103.621508,
-				},
 			},
 		},
 	}
