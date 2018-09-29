@@ -6,11 +6,6 @@ import (
 	"math"
 )
 
-const (
-	// EarthRadius according to Wikipedia
-	EarthRadius = 6371
-)
-
 // Point is a geo co-ordinate
 type Point struct {
 	lat float64
@@ -45,10 +40,10 @@ func loadBusJSON(jsonfile string) (bs []BusStop, err error) {
 func (BusStops BusStops) closest(location Point) (c BusStop) {
 	c = BusStops[0]
 	// fmt.Println(c)
-	closestSoFar := location.GreatCircleDistance(Point{c.Latitude, c.Longitude})
+	closestSoFar := location.distance(Point{c.Latitude, c.Longitude})
 	// log.Println(c.Description, closestSoFar)
 	for _, p := range BusStops[1:] {
-		distance := location.GreatCircleDistance(Point{p.Latitude, p.Longitude})
+		distance := location.distance(Point{p.Latitude, p.Longitude})
 		// log.Printf("'%s' %.1f\n", p.Description, distance)
 		if distance < closestSoFar {
 			// Set the return
@@ -69,21 +64,9 @@ func (BusStops BusStops) nameBusStopID(busid string) (description string) {
 	return ""
 }
 
-// GreatCircleDistance calculates the distance between two points considering the curvature of planet earth
-// From https://github.com/kellydunn/golang-geo/blob/master/point.go#L70
-func (p Point) GreatCircleDistance(p2 Point) float64 {
-	dLat := (p2.lat - p.lat) * (math.Pi / 180.0)
-	dLon := (p2.lng - p.lng) * (math.Pi / 180.0)
-
-	lat1 := p.lat * (math.Pi / 180.0)
-	lat2 := p2.lat * (math.Pi / 180.0)
-
-	a1 := math.Sin(dLat/2) * math.Sin(dLat/2)
-	a2 := math.Sin(dLon/2) * math.Sin(dLon/2) * math.Cos(lat1) * math.Cos(lat2)
-
-	a := a1 + a2
-
-	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
-
-	return EarthRadius * c
+// distance calculates the distance between two points
+func (p Point) distance(p2 Point) float64 {
+	latd := p2.lat - p.lat
+	lngd := p2.lng - p.lng
+	return math.Sqrt(latd*latd + lngd*lngd)
 }
